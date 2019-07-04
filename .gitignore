@@ -1,0 +1,4 @@
+.idea
+www/**
+!www/.keep
+logs/nginx/**

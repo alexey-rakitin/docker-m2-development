@@ -1,0 +1,88 @@
+version: "3"
+services:
+  nginx:
+    image: nginx
+    container_name: ${PROJECT_NAME}-nginx
+    labels:
+      - traefik.backend=${PROJECT_NAME}
+      - traefik.frontend.rule=Host:${HOST_NAME}
+      - traefik.docker.network=proxy
+      - traefik.apache.port=80
+    env_file:
+      - .env
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/nginx.conf
+      - ${HOST_DIR}/www:${MAGENTO_PATH}:delegated
+      - ${HOST_DIR}/logs/nginx/:/var/log/nginx:delegated
+    networks:
+      - proxy
+      - internal
+    depends_on:
+      - mysql_db
+      - php-fpm
+
+  php-fpm:
+    build:
+      context: ${HOST_DIR}/PHP
+      args:
+        - MAGENTO_PATH=${MAGENTO_PATH}
+        - CONF_PATH=${HOST_DIR}/conf
+    container_name: ${PROJECT_NAME}-php
+    volumes:
+      - ${HOST_DIR}/www:${MAGENTO_PATH}:delegated
+      - composer-cache:/var/www/.composer/cache/files
+    networks:
+      - internal
+    env_file:
+      - .env
+    environment:
+      - MAGENTO_URL=${MAGENTO_URL}
+      - MAGENTO_SECURE_URL=${MAGENTO_SECURE_URL}
+
+  mysql_db:
+    image: mysql:5.7
+    container_name: ${PROJECT_NAME}-mysql
+    env_file:
+      - .env
+    volumes:
+      - ${HOST_DIR}/MySQL:/var/lib/mysql
+    networks:
+      - internal
+    labels:
+      - traefik.enable=false
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: ${PROJECT_NAME}-mail
+    networks:
+      - proxy
+      - internal
+    labels:
+      - traefik.backend=${PROJECT_NAME}-mailhog
+      - traefik.frontend.rule=Host:mail.${HOST_NAME}
+      - traefik.docker.network=proxy
+      - traefik.apache.port=8025
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: ${PROJECT_NAME}-phpmyadmin
+    env_file:
+      - .env
+    labels:
+      - traefik.backend=phpmyadmin
+      - traefik.frontend.rule=Host:db-admin.${HOST_NAME}
+      - traefik.docker.network=proxy
+      - traefik.port=80
+    networks:
+      - internal
+      - proxy
+    depends_on:
+      - mysql_db
+networks:
+  proxy:
+    external: true
+  internal:
+    external: false
+volumes:
+  composer-cache:
+    external: true

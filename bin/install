@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/.. >/dev/null && pwd )"
+set -a
+source ${DIR}/conf/.env
+echo 'Installing magento ...'
+docker exec -it ${PROJECT_NAME}-php bin/magento setup:install \
+    --base-url=${MAGENTO_SECURE_URL} \
+    --db-host=${MYSQL_HOST} \
+    --db-name=${MYSQL_DATABASE} \
+    --db-user=${MYSQL_USER} \
+    --db-password=${MYSQL_PASSWORD} \
+    --admin-user=${MAGENTO_ADMIN_USERNAME} \
+    --admin-password=${MAGENTO_ADMIN_PASSWORD} \
+    --admin-email=${MAGENTO_ADMIN_EMAIL} \
+    --admin-firstname=${MAGENTO_ADMIN_FIRSTNAME} \
+    --admin-lastname=${MAGENTO_ADMIN_LASTNAME} \
+    --language=${MAGENTO_LANGUAGE} \
+    --currency=${MAGENTO_DEFAULT_CURRENCY} \
+    --timezone=${MAGENTO_TIMEZONE} \
+    --backend-frontname=admin \
+    --use-rewrites=1
+
+echo 'Setting up cron ...'
+docker exec -it ${MAGENTO_CONTAINER} bin/magento cron:install
+docker exec -it ${MAGENTO_CONTAINER} bin/magento cron:run
+
+echo 'Setting up grunt ...'
+docker exec -it -u root ${MAGENTO_CONTAINER} npm install -g grunt-cli
+docker exec -it ${MAGENTO_CONTAINER} cp ${MAGENTO_PATH}/grunt-config.json.sample ${MAGENTO_PATH}/grunt-config.json
+docker exec -it ${MAGENTO_CONTAINER} cp ${MAGENTO_PATH}/package.json.sample ${MAGENTO_PATH}/package.json
+docker exec -it ${MAGENTO_CONTAINER} cp ${MAGENTO_PATH}/Gruntfile.js.sample ${MAGENTO_PATH}/Gruntfile.js
+docker exec -it ${MAGENTO_CONTAINER} npm install
