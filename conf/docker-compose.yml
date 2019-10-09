@@ -44,8 +44,6 @@ services:
     container_name: ${PROJECT_NAME}-mysql
     env_file:
       - .env
-    volumes:
-      - ${HOST_DIR}/MySQL:/var/lib/mysql
     networks:
       - internal
     labels:
