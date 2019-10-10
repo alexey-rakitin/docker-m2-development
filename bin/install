@@ -3,7 +3,8 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/.. >/dev/null && pwd )"
 set -a
 source ${DIR}/conf/.env
 echo 'Installing magento ...'
-docker exec -it ${PROJECT_NAME}-php bin/magento setup:install \
+docker exec -it ${MAGENTO_CONTAINER} composer create-project --repository=https://repo.magento.com/ magento/project-community-edition /var/www/html
+docker exec -it ${MAGENTO_CONTAINER} bin/magento setup:install \
     --base-url=${MAGENTO_SECURE_URL} \
     --db-host=${MYSQL_HOST} \
     --db-name=${MYSQL_DATABASE} \

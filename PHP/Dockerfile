@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y \
     nano \
     mc \
     openssh-server \
-    mysql-client \
+    default-mysql-client \
     gnupg2 \
     && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
     && docker-php-ext-configure hash --with-mhash \
