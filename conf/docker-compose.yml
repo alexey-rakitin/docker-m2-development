@@ -3,11 +3,6 @@ services:
   nginx:
     image: nginx
     container_name: ${PROJECT_NAME}-nginx
-    labels:
-      - traefik.backend=${PROJECT_NAME}
-      - traefik.frontend.rule=Host:${HOST_NAME}
-      - traefik.docker.network=proxy
-      - traefik.apache.port=80
     env_file:
       - .env
     volumes:
@@ -15,29 +10,49 @@ services:
       - ${HOST_DIR}/www:${MAGENTO_PATH}:delegated
       - ${HOST_DIR}/logs/nginx/:/var/log/nginx:delegated
     networks:
-      - proxy
-      - internal
+      m2net:
+        ipv4_address: 172.101.0.10
     depends_on:
       - mysql_db
       - php-fpm
 
   php-fpm:
     build:
-      context: ${HOST_DIR}/PHP
+      context: ${HOST_DIR}/conf
+      dockerfile: DockerfileFPM
       args:
         - MAGENTO_PATH=${MAGENTO_PATH}
         - CONF_PATH=${HOST_DIR}/conf
-    container_name: ${PROJECT_NAME}-php
+    container_name: ${PROJECT_NAME}-fpm
     volumes:
       - ${HOST_DIR}/www:${MAGENTO_PATH}:delegated
-      - composer-cache:/var/www/.composer/cache/files
     networks:
-      - internal
+      - m2net
     env_file:
       - .env
     environment:
       - MAGENTO_URL=${MAGENTO_URL}
       - MAGENTO_SECURE_URL=${MAGENTO_SECURE_URL}
+
+  php-cli:
+    build:
+      context: ${HOST_DIR}/conf
+      dockerfile: DockerfileCLI
+      args:
+        - MAGENTO_PATH=${MAGENTO_PATH}
+        - CONF_PATH=${HOST_DIR}/conf
+    container_name: ${PROJECT_NAME}-cli
+    volumes:
+      - ${HOST_DIR}/www:${MAGENTO_PATH}:delegated
+      - composer-cache:/var/www/.composer/cache/files
+    networks:
+      - m2net
+    env_file:
+      - .env
+    environment:
+      - MAGENTO_URL=${MAGENTO_URL}
+      - MAGENTO_SECURE_URL=${MAGENTO_SECURE_URL}
+    tty: true
 
   mysql_db:
     image: mysql:5.7
@@ -45,42 +60,14 @@ services:
     env_file:
       - .env
     networks:
-      - internal
-    labels:
-      - traefik.enable=false
+      - m2net
 
-  mailhog:
-    image: mailhog/mailhog
-    container_name: ${PROJECT_NAME}-mail
-    networks:
-      - proxy
-      - internal
-    labels:
-      - traefik.backend=${PROJECT_NAME}-mailhog
-      - traefik.frontend.rule=Host:mail.${HOST_NAME}
-      - traefik.docker.network=proxy
-      - traefik.apache.port=8025
-
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    container_name: ${PROJECT_NAME}-phpmyadmin
-    env_file:
-      - .env
-    labels:
-      - traefik.backend=phpmyadmin
-      - traefik.frontend.rule=Host:db-admin.${HOST_NAME}
-      - traefik.docker.network=proxy
-      - traefik.port=80
-    networks:
-      - internal
-      - proxy
-    depends_on:
-      - mysql_db
 networks:
-  proxy:
-    external: true
-  internal:
-    external: false
+  m2net:
+    ipam:
+      driver: default
+      config:
+        - subnet: "172.101.0.0/16"
 volumes:
   composer-cache:
     external: true

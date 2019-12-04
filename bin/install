@@ -5,7 +5,8 @@ source ${DIR}/conf/.env
 echo 'Installing magento ...'
 docker exec -it ${MAGENTO_CONTAINER} composer create-project --repository=https://repo.magento.com/ magento/project-community-edition /var/www/html
 docker exec -it ${MAGENTO_CONTAINER} bin/magento setup:install \
-    --base-url=${MAGENTO_SECURE_URL} \
+    --base-url=${MAGENTO_URL} \
+    --base-url-secure=${MAGENTO_SECURE_URL} \
     --db-host=${MYSQL_HOST} \
     --db-name=${MYSQL_DATABASE} \
     --db-user=${MYSQL_USER} \
