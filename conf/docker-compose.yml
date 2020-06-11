@@ -4,10 +4,12 @@ services:
     image: nginx
     container_name: ${PROJECT_NAME}-nginx
     labels:
-      - traefik.backend=${PROJECT_NAME}
-      - traefik.frontend.rule=Host:${HOST_NAME}
-      - traefik.docker.network=proxy
-      - traefik.apache.port=80
+      - "traefik.enable=true"
+      - "traefik.http.routers.${PROJECT_NAME}.rule=Host(`${HOST_NAME}`)"
+      - "traefik.http.routers.${PROJECT_NAME}.entrypoints=web"
+      - "traefik.http.routers.${PROJECT_NAME}-tls.rule=Host(`${HOST_NAME}`)"
+      - "traefik.http.routers.${PROJECT_NAME}-tls.entrypoints=web-secure"
+      - "traefik.http.routers.${PROJECT_NAME}-tls.tls=true"
     env_file:
       - .env
     volumes:
@@ -18,7 +20,7 @@ services:
       - proxy
       - internal
     depends_on:
-      - mysql_db
+      - mysql
       - php-fpm
 
   php-fpm:
@@ -29,6 +31,7 @@ services:
         - CONF_PATH=${HOST_DIR}/conf
     container_name: ${PROJECT_NAME}-php
     volumes:
+      - ${HOST_DIR}/PHP/zphp.ini:/usr/local/etc/php/conf.d/zphp.ini
       - ${HOST_DIR}/www:${MAGENTO_PATH}:delegated
       - composer-cache:/var/www/.composer/cache/files
     networks:
@@ -39,15 +42,15 @@ services:
       - MAGENTO_URL=${MAGENTO_URL}
       - MAGENTO_SECURE_URL=${MAGENTO_SECURE_URL}
 
-  mysql_db:
+  mysql:
     image: mysql:5.7
     container_name: ${PROJECT_NAME}-mysql
     env_file:
       - .env
+    volumes:
+      - ${HOST_DIR}/MySQL:/var/lib/mysql
     networks:
       - internal
-    labels:
-      - traefik.enable=false
 
   mailhog:
     image: mailhog/mailhog
@@ -56,10 +59,13 @@ services:
       - proxy
       - internal
     labels:
-      - traefik.backend=${PROJECT_NAME}-mailhog
-      - traefik.frontend.rule=Host:mail.${HOST_NAME}
-      - traefik.docker.network=proxy
-      - traefik.apache.port=8025
+      - "traefik.enable=true"
+      - "traefik.http.routers.${PROJECT_NAME}-mail.rule=Host(`mail.${HOST_NAME}`)"
+      - "traefik.http.routers.${PROJECT_NAME}-mail.entrypoints=web"
+      - "traefik.http.routers.${PROJECT_NAME}-mail-tls.rule=Host(`mail.${HOST_NAME}`)"
+      - "traefik.http.routers.${PROJECT_NAME}-mail-tls.entrypoints=web-secure"
+      - "traefik.http.routers.${PROJECT_NAME}-mail-tls.tls=true"
+      - "traefik.http.services.${PROJECT_NAME}-mail.loadbalancer.server.port=8025"
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
@@ -67,15 +73,17 @@ services:
     env_file:
       - .env
     labels:
-      - traefik.backend=phpmyadmin
-      - traefik.frontend.rule=Host:db-admin.${HOST_NAME}
-      - traefik.docker.network=proxy
-      - traefik.port=80
+      - "traefik.enable=true"
+      - "traefik.http.routers.${PROJECT_NAME}-db.rule=Host(`db-admin.${HOST_NAME}`)"
+      - "traefik.http.routers.${PROJECT_NAME}-db.entrypoints=web"
+      - "traefik.http.routers.${PROJECT_NAME}-db-tls.rule=Host(`db-admin.${HOST_NAME}`)"
+      - "traefik.http.routers.${PROJECT_NAME}-db-tls.entrypoints=web-secure"
+      - "traefik.http.routers.${PROJECT_NAME}-db-tls.tls=true"
     networks:
       - internal
       - proxy
     depends_on:
-      - mysql_db
+      - mysql
 networks:
   proxy:
     external: true

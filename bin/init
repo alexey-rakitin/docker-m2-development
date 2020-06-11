@@ -3,6 +3,47 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/.. >/dev/null && pwd )"
 set -a
 source ${DIR}/conf/.env
 
+if [[ $( docker network inspect -f '{{.Name}}' proxy) == "proxy" ]]; then
+  echo "### Proxy network found"
+else
+  echo "### Creating Proxy network"
+  docker network create proxy
+fi
+
+if [[ $( docker volume inspect -f '{{.Name}}' composer-cache) == "composer-cache" ]]; then
+  echo "### Composer cache volume found"
+else
+  echo "### Creating Composer cache volume"
+  docker volume create composer-cache
+fi
+
+if [[ $(docker inspect -f '{{.Name}}' traefik2) == "/traefik2" ]]; then
+    echo "### Traefik container 'traefik2' found"
+    if [[ $(docker inspect -f '{{.State.Running}}' traefik2) == "false" ]]; then
+        echo '### Starting Traefik container'
+        docker start traefik2;
+    fi
+elif [[ $(docker ps | grep traefik) != '' ]]; then
+    echo "### Unknown Traefik container is running. Aborting."
+    exit 1
+else
+    echo "### Creating Traefik container"
+    mkdir -p /var/www/traefik/conf
+    if [[ ! -f /var/www/traefik/traefik.yml ]]; then
+        cp ${DIR}/conf/traefik.yml /var/www/traefik/traefik.yml
+    fi
+    docker run -d \
+      -v /var/run/docker.sock:/var/run/docker.sock \
+      -v /var/www/traefik/traefik.yml:/traefik.yml \
+      -p 80:80 \
+      -p 443:443 \
+      --network proxy \
+      --name traefik2 \
+      --restart=always \
+      traefik:v2.1 \
+      traefik
+fi
+
 docker-compose -f ${DIR}/conf/docker-compose.yml -p ${PROJECT_NAME} up -d --build --force-recreate
 
 echo "***************************"

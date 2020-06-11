@@ -1,0 +1,34 @@
+# Traefik static configuration
+providers:
+  file:
+    directory: /conf
+    watch: true
+  docker:
+    watch: true
+    network: proxy
+    exposedbydefault: false
+entrypoints:
+  web:
+    address: :80
+  web-secure:
+    address: :443
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      # Provide valid e-mail to receive notices from Let's Encrypt
+      email: your-email@your-domain.org
+      storage: /conf/acme.json
+      tlsChallenge: {}
+      # Let's encrypt staging server, uncomment below line for testing purposes
+#      caServer: https://acme-staging-v02.api.letsencrypt.org/directory
+
+# Disable SSL verification between Traefik & Backends
+serversTransport:
+  insecureSkipVerify: true
+
+api:
+  dashboard: false
+log:
+  format: json
+# Local development only
+  level: DEBUG

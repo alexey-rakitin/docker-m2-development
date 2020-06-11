@@ -25,19 +25,20 @@ RUN apt-get update && apt-get install -y \
     gnupg2 \
     && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
     && docker-php-ext-configure hash --with-mhash \
-    && docker-php-ext-install -j$(nproc) intl xsl gd zip pdo_mysql opcache soap bcmath json iconv \
+    && docker-php-ext-install -j$(nproc) intl xsl gd zip pdo_mysql opcache soap bcmath json iconv sockets \
     && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
     && pecl install xdebug && docker-php-ext-enable xdebug \
     && mkdir /var/run/sshd \
-    && curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash - && apt-get install -y nodejs \
+    && curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash - && apt-get install -y nodejs \
     && echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
 RUN curl -Lsf 'https://storage.googleapis.com/golang/go1.13.1.linux-amd64.tar.gz' | tar -C '/usr/local' -xvzf -
 ENV PATH /usr/local/go/bin:$PATH
 RUN go get github.com/mailhog/mhsendmail \
     && cp /root/go/bin/mhsendmail /usr/bin/mhsendmail
+
 COPY ./auth.json /var/www/.composer/auth.json
-COPY ./zphp.ini /usr/local/etc/php/conf.d/zphp.ini
 
 RUN mkdir -p /var/www/.composer/cache/repo \
     && userdel -f www-data \

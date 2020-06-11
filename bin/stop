@@ -3,7 +3,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/.. >/dev/null && pwd )"
 set -a
 source ${DIR}/conf/.env
 
-docker-compose -f ${DIR}/conf/docker-compose.yml -p ${PROJECT_NAME} up -d
+docker-compose -f ${DIR}/conf/docker-compose.yml -p ${PROJECT_NAME} stop
 
 echo "***************************"
 echo "Hostname: ${HOST_NAME}"
