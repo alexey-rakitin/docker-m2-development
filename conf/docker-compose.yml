@@ -52,6 +52,46 @@ services:
     networks:
       - internal
 
+  es01:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.8.1
+    container_name: ${PROJECT_NAME}-es01
+    environment:
+      - node.name=es01
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=es02
+      - cluster.initial_master_nodes=es01,es02
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata01:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    networks:
+      - internal
+
+  es02:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.8.1
+    container_name: ${PROJECT_NAME}-es02
+    environment:
+      - node.name=es02
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=es01
+      - cluster.initial_master_nodes=es01,es02
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata02:/usr/share/elasticsearch/data
+    networks:
+      - internal
+
   mailhog:
     image: mailhog/mailhog
     container_name: ${PROJECT_NAME}-mail
@@ -84,11 +124,16 @@ services:
       - proxy
     depends_on:
       - mysql
+
 networks:
   proxy:
     external: true
   internal:
     external: false
 volumes:
+  esdata01:
+    driver: local
+  esdata02:
+    driver: local
   composer-cache:
     external: true

@@ -11,6 +11,8 @@ docker exec -it ${MAGENTO_CONTAINER} bin/magento setup:install \
     --db-name=${MYSQL_DATABASE} \
     --db-user=${MYSQL_USER} \
     --db-password=${MYSQL_PASSWORD} \
+    --elasticsearch-host="es01" \
+    --elasticsearch-port="9200" \
     --admin-user=${MAGENTO_ADMIN_USERNAME} \
     --admin-password=${MAGENTO_ADMIN_PASSWORD} \
     --admin-email=${MAGENTO_ADMIN_EMAIL} \
